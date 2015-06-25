@@ -1,38 +1,38 @@
 package lirc
 
 import (
-	"net"
 	"bufio"
 	"encoding/hex"
-	"strings"
-	"strconv"
-	"log"
-	"time"
 	"errors"
+	"log"
+	"net"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type LircRouter struct {
 	handlers map[remoteButton]Handle
 
-	path string
+	path       string
 	connection net.Conn
-	writer *bufio.Writer
-	reply chan LircReply
-	receive chan LircEvent
+	writer     *bufio.Writer
+	reply      chan LircReply
+	receive    chan LircEvent
 }
 
 type LircEvent struct {
-	code uint64
+	code   uint64
 	repeat int
 	button string
 	remote string
 }
 
 type LircReply struct {
-	command string
-	success int
+	command  string
+	success  int
 	data_len int
-	data []string
+	data     []string
 }
 
 func Init(path string) (*LircRouter, error) {
@@ -47,7 +47,7 @@ func Init(path string) (*LircRouter, error) {
 	l.path = path
 
 	l.writer = bufio.NewWriter(c)
-	l.reply  = make(chan LircReply)
+	l.reply = make(chan LircReply)
 	l.receive = make(chan LircEvent)
 
 	scanner := bufio.NewScanner(c)
@@ -58,14 +58,14 @@ func Init(path string) (*LircRouter, error) {
 
 func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply) {
 	const (
-		RECEIVE = iota
-		REPLY = iota
-		MESSAGE = iota
-		STATUS = iota
+		RECEIVE    = iota
+		REPLY      = iota
+		MESSAGE    = iota
+		STATUS     = iota
 		DATA_START = iota
-		DATA_LEN = iota
-		DATA = iota
-		END = iota
+		DATA_LEN   = iota
+		DATA       = iota
+		END        = iota
 	)
 
 	var message LircReply
@@ -82,24 +82,24 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 			} else {
 				r := strings.Split(line, " ")
 				c, err := hex.DecodeString(r[0])
-			        if err != nil {
+				if err != nil {
 					log.Println("Invalid lirc broadcats message received - code not parseable")
 					continue
 				}
-		        	if (len(c) != 8) {
+				if len(c) != 8 {
 					log.Println("Invalid lirc broadcats message received - code has wrong length")
 					continue
 				}
 
 				var code uint64
 				code = 0
-				for i:=0; i< 8; i++ {
-					code &= uint64(c[i]) << uint(8*i)	
+				for i := 0; i < 8; i++ {
+					code &= uint64(c[i]) << uint(8*i)
 				}
 
 				var event LircEvent
 				event.repeat, err = strconv.Atoi(r[1])
-			        if err != nil {
+				if err != nil {
 					log.Println("Invalid lirc broadcats message received - invalid repeat count")
 				}
 				event.code = code
@@ -173,8 +173,8 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 func (l *LircRouter) Command(command string) LircReply {
 	l.writer.WriteString(command + "\n")
 	l.writer.Flush()
-	
-	reply := <- l.reply
+
+	reply := <-l.reply
 
 	return reply
 }
@@ -198,7 +198,7 @@ func (l *LircRouter) SendLong(command string, duration string) error {
 		return errors.New(strings.Join(reply.data, " "))
 	}
 	time.Sleep(d)
-	reply  = l.Command("SEND_STOP " + command)
+	reply = l.Command("SEND_STOP " + command)
 	if reply.success == 0 {
 		return errors.New(strings.Join(reply.data, " "))
 	}

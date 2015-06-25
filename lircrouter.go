@@ -13,7 +13,7 @@ type remoteButton struct {
 // Handle is a function that can be registered to handle an lirc Event
 type Handle func(LircEvent)
 
-// Handle registers a new event handle 
+// Handle registers a new event handle
 func (l *LircRouter) Handle(remote string, button string, handle Handle) {
 	var rb remoteButton
 
@@ -26,7 +26,7 @@ func (l *LircRouter) Handle(remote string, button string, handle Handle) {
 	if button == "" {
 		rb.button = "*"
 	} else {
-		rb.button = button 
+		rb.button = button
 	}
 
 	if l.handlers == nil {
@@ -39,8 +39,8 @@ func (l *LircRouter) Handle(remote string, button string, handle Handle) {
 func (l *LircRouter) Run() {
 	var rb remoteButton
 
-        for {
-                event := <- l.receive
+	for {
+		event := <-l.receive
 		match := 0
 
 		// Check for exakt match
@@ -61,9 +61,9 @@ func (l *LircRouter) Run() {
 				match = 1
 			}
 		}
-	
+
 		if match == 0 {
 			log.Println("No match for ", event)
 		}
-        }
+	}
 }
