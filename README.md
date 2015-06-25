@@ -1,7 +1,7 @@
 LIRC
 ====
 
-Go client for the infamous Linux Infrared Remote Control ((LIRC))[http://www.lirc.org] package
+Go client for the infamous Linux Infrared Remote Control ([LIRC](http://www.lirc.org)) package
 
 #### Usage
 
@@ -31,6 +31,8 @@ func main() {
   if err != nil {
     panic(err)
   }
+
+  // Receive Commands
 
   // attach key press handlers
   ir.Handle("", "KEY_POWER", keyPower)

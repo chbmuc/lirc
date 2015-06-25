@@ -43,9 +43,9 @@ func (l *LircRouter) Run() {
 		event := <-l.receive
 		match := 0
 
-		// Check for exakt match
-		rb.remote = event.remote
-		rb.button = event.button
+		// Check for exact match
+		rb.remote = event.Remote
+		rb.button = event.Button
 		if h, ok := l.handlers[rb]; ok {
 			h(event)
 			continue
@@ -53,8 +53,8 @@ func (l *LircRouter) Run() {
 
 		// Check for pattern matches
 		for k, h := range l.handlers {
-			remote_matched, _ := filepath.Match(k.remote, event.remote)
-			button_matched, _ := filepath.Match(k.button, event.button)
+			remote_matched, _ := filepath.Match(k.remote, event.Remote)
+			button_matched, _ := filepath.Match(k.button, event.Button)
 
 			if remote_matched && button_matched {
 				h(event)

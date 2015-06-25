@@ -22,10 +22,10 @@ type LircRouter struct {
 }
 
 type LircEvent struct {
-	code   uint64
-	repeat int
-	button string
-	remote string
+	Code   uint64
+	Repeat int
+	Button string
+	Remote string
 }
 
 type LircReply struct {
@@ -98,13 +98,13 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 				}
 
 				var event LircEvent
-				event.repeat, err = strconv.Atoi(r[1])
+				event.Repeat, err = strconv.Atoi(r[1])
 				if err != nil {
 					log.Println("Invalid lirc broadcats message received - invalid repeat count")
 				}
-				event.code = code
-				event.button = r[2]
-				event.remote = r[3]
+				event.Code = code
+				event.Button = r[2]
+				event.Remote = r[3]
 				receive <- event
 			}
 		case REPLY:
