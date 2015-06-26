@@ -29,10 +29,10 @@ type LircEvent struct {
 }
 
 type LircReply struct {
-	command  string
-	success  int
-	data_len int
-	data     []string
+	Command    string
+	Success    int
+	DataLength int
+	Data       []string
 }
 
 func Init(path string) (*LircRouter, error) {
@@ -108,21 +108,21 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 				receive <- event
 			}
 		case REPLY:
-			message.command = line
-			message.success = 0
-			message.data_len = 0
-			message.data = message.data[:0]
+			message.Command = line
+			message.Success = 0
+			message.DataLength = 0
+			message.Data = message.Data[:0]
 			state = STATUS
 		case STATUS:
 			if line == "SUCCESS" {
-				message.success = 1
+				message.Success = 1
 				state = DATA_START
 			} else if line == "END" {
-				message.success = 1
+				message.Success = 1
 				state = RECEIVE
 				reply <- message
 			} else if line == "ERROR" {
-				message.success = 0
+				message.Success = 0
 				state = DATA_START
 			} else {
 				log.Println("Invalid lirc reply message received - invalid status")
@@ -141,7 +141,7 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 		case DATA_LEN:
 			data_cnt = 0
 			var err error
-			message.data_len, err = strconv.Atoi(line)
+			message.DataLength, err = strconv.Atoi(line)
 			if err != nil {
 				log.Println("Invalid lirc reply message received - invalid data len")
 				state = RECEIVE
@@ -149,11 +149,11 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 				state = DATA
 			}
 		case DATA:
-			if data_cnt < message.data_len {
-				message.data = append(message.data, line)
+			if data_cnt < message.DataLength {
+				message.Data = append(message.Data, line)
 			}
 			data_cnt++
-			if data_cnt == message.data_len {
+			if data_cnt == message.DataLength {
 				state = END
 			}
 		case END:
@@ -181,26 +181,21 @@ func (l *LircRouter) Command(command string) LircReply {
 
 func (l *LircRouter) Send(command string) error {
 	reply := l.Command("SEND_ONCE " + command)
-	if reply.success == 0 {
-		return errors.New(strings.Join(reply.data, " "))
+	if reply.Success == 0 {
+		return errors.New(strings.Join(reply.Data, " "))
 	}
 	return nil
 }
 
-func (l *LircRouter) SendLong(command string, duration string) error {
-	d, err := time.ParseDuration(duration)
-	if err != nil {
-		return err
-	}
-
+func (l *LircRouter) SendLong(command string, delay time.Duration) error {
 	reply := l.Command("SEND_START " + command)
-	if reply.success == 0 {
-		return errors.New(strings.Join(reply.data, " "))
+	if reply.Success == 0 {
+		return errors.New(strings.Join(reply.Data, " "))
 	}
-	time.Sleep(d)
+	time.Sleep(delay)
 	reply = l.Command("SEND_STOP " + command)
-	if reply.success == 0 {
-		return errors.New(strings.Join(reply.data, " "))
+	if reply.Success == 0 {
+		return errors.New(strings.Join(reply.Data, " "))
 	}
 
 	return nil
