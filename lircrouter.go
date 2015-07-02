@@ -11,10 +11,10 @@ type remoteButton struct {
 }
 
 // Handle is a function that can be registered to handle an lirc Event
-type Handle func(LircEvent)
+type Handle func(Event)
 
-// Handle registers a new event handle 
-func (l *LircRouter) Handle(remote string, button string, handle Handle) {
+// Handle registers a new event handler for a defined key
+func (l *Router) Handle(remote string, button string, handle Handle) {
 	var rb remoteButton
 
 	if remote == "" {
@@ -26,7 +26,7 @@ func (l *LircRouter) Handle(remote string, button string, handle Handle) {
 	if button == "" {
 		rb.button = "*"
 	} else {
-		rb.button = button 
+		rb.button = button
 	}
 
 	if l.handlers == nil {
@@ -36,16 +36,17 @@ func (l *LircRouter) Handle(remote string, button string, handle Handle) {
 	l.handlers[rb] = handle
 }
 
-func (l *LircRouter) Run() {
+// Run this in a go routine to listen for IR Key Press Events
+func (l *Router) Run() {
 	var rb remoteButton
 
-        for {
-                event := <- l.receive
+	for {
+		event := <-l.receive
 		match := 0
 
-		// Check for exakt match
-		rb.remote = event.remote
-		rb.button = event.button
+		// Check for exact match
+		rb.remote = event.Remote
+		rb.button = event.Button
 		if h, ok := l.handlers[rb]; ok {
 			h(event)
 			continue
@@ -53,17 +54,17 @@ func (l *LircRouter) Run() {
 
 		// Check for pattern matches
 		for k, h := range l.handlers {
-			remote_matched, _ := filepath.Match(k.remote, event.remote)
-			button_matched, _ := filepath.Match(k.button, event.button)
+			remoteMatched, _ := filepath.Match(k.remote, event.Remote)
+			buttonMatched, _ := filepath.Match(k.button, event.Button)
 
-			if remote_matched && button_matched {
+			if remoteMatched && buttonMatched {
 				h(event)
 				match = 1
 			}
 		}
-	
+
 		if match == 0 {
 			log.Println("No match for ", event)
 		}
-        }
+	}
 }
