@@ -11,10 +11,10 @@ type remoteButton struct {
 }
 
 // Handle is a function that can be registered to handle an lirc Event
-type Handle func(LircEvent)
+type Handle func(Event)
 
-// Handle registers a new event handle
-func (l *LircRouter) Handle(remote string, button string, handle Handle) {
+// Handle registers a new event handler for a defined key
+func (l *Router) Handle(remote string, button string, handle Handle) {
 	var rb remoteButton
 
 	if remote == "" {
@@ -36,7 +36,8 @@ func (l *LircRouter) Handle(remote string, button string, handle Handle) {
 	l.handlers[rb] = handle
 }
 
-func (l *LircRouter) Run() {
+// Run this in a go routine to listen for IR Key Press Events
+func (l *Router) Run() {
 	var rb remoteButton
 
 	for {
@@ -53,10 +54,10 @@ func (l *LircRouter) Run() {
 
 		// Check for pattern matches
 		for k, h := range l.handlers {
-			remote_matched, _ := filepath.Match(k.remote, event.Remote)
-			button_matched, _ := filepath.Match(k.button, event.Button)
+			remoteMatched, _ := filepath.Match(k.remote, event.Remote)
+			buttonMatched, _ := filepath.Match(k.button, event.Button)
 
-			if remote_matched && button_matched {
+			if remoteMatched && buttonMatched {
 				h(event)
 				match = 1
 			}

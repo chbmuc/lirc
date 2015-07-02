@@ -1,7 +1,7 @@
 LIRC
 ====
 
-Go client for the infamous Linux Infrared Remote Control ([LIRC](http://www.lirc.org)) package
+Go client for Linux Infrared Remote Control ([LIRC](http://www.lirc.org)) package
 
 #### Usage
 
@@ -13,15 +13,15 @@ import (
   "log"
 )
 
-func keyPower(event lirc.LircEvent) {
+func keyPower(event lirc.Event) {
   log.Println("Power Key Pressed")
 }
 
-func keyTV(event lirc.LircEvent) {
+func keyTV(event lirc.Event) {
   log.Println("TV Key Pressed")
 }
 
-func keyAll(event lirc.LircEvent) {
+func keyAll(event lirc.Event) {
   log.Println(event)
 }
 

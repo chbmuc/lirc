@@ -11,32 +11,36 @@ import (
 	"time"
 )
 
-type LircRouter struct {
+// Router manages sending and receiving of commands / data
+type Router struct {
 	handlers map[remoteButton]Handle
 
 	path       string
 	connection net.Conn
 	writer     *bufio.Writer
-	reply      chan LircReply
-	receive    chan LircEvent
+	reply      chan Reply
+	receive    chan Event
 }
 
-type LircEvent struct {
+// Event represents the IR Remote Key Press Event
+type Event struct {
 	Code   uint64
 	Repeat int
 	Button string
 	Remote string
 }
 
-type LircReply struct {
+// Reply received when a command is sent
+type Reply struct {
 	Command    string
 	Success    int
 	DataLength int
 	Data       []string
 }
 
-func Init(path string) (*LircRouter, error) {
-	l := new(LircRouter)
+// Init initializes the connection to lirc daemon
+func Init(path string) (*Router, error) {
+	l := new(Router)
 
 	c, err := net.Dial("unix", path)
 
@@ -47,8 +51,8 @@ func Init(path string) (*LircRouter, error) {
 	l.path = path
 
 	l.writer = bufio.NewWriter(c)
-	l.reply = make(chan LircReply)
-	l.receive = make(chan LircEvent)
+	l.reply = make(chan Reply)
+	l.receive = make(chan Event)
 
 	scanner := bufio.NewScanner(c)
 	go reader(scanner, l.receive, l.reply)
@@ -56,21 +60,21 @@ func Init(path string) (*LircRouter, error) {
 	return l, nil
 }
 
-func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply) {
+func reader(scanner *bufio.Scanner, receive chan Event, reply chan Reply) {
 	const (
-		RECEIVE    = iota
-		REPLY      = iota
-		MESSAGE    = iota
-		STATUS     = iota
-		DATA_START = iota
-		DATA_LEN   = iota
-		DATA       = iota
-		END        = iota
+		RECEIVE = iota
+		REPLY
+		MESSAGE
+		STATUS
+		DATA_START
+		DATA_LEN
+		DATA
+		END
 	)
 
-	var message LircReply
+	var message Reply
 	state := RECEIVE
-	data_cnt := 0
+	dataCnt := 0
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -97,7 +101,7 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 					code &= uint64(c[i]) << uint(8*i)
 				}
 
-				var event LircEvent
+				var event Event
 				event.Repeat, err = strconv.Atoi(r[1])
 				if err != nil {
 					log.Println("Invalid lirc broadcats message received - invalid repeat count")
@@ -139,7 +143,7 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 				state = RECEIVE
 			}
 		case DATA_LEN:
-			data_cnt = 0
+			dataCnt = 0
 			var err error
 			message.DataLength, err = strconv.Atoi(line)
 			if err != nil {
@@ -149,11 +153,11 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 				state = DATA
 			}
 		case DATA:
-			if data_cnt < message.DataLength {
+			if dataCnt < message.DataLength {
 				message.Data = append(message.Data, line)
 			}
-			data_cnt++
-			if data_cnt == message.DataLength {
+			dataCnt++
+			if dataCnt == message.DataLength {
 				state = END
 			}
 		case END:
@@ -170,7 +174,8 @@ func reader(scanner *bufio.Scanner, receive chan LircEvent, reply chan LircReply
 	}
 }
 
-func (l *LircRouter) Command(command string) LircReply {
+// Command - Send any command to lircd
+func (l *Router) Command(command string) Reply {
 	l.writer.WriteString(command + "\n")
 	l.writer.Flush()
 
@@ -179,7 +184,8 @@ func (l *LircRouter) Command(command string) LircReply {
 	return reply
 }
 
-func (l *LircRouter) Send(command string) error {
+// Send a SEND_ONCE command
+func (l *Router) Send(command string) error {
 	reply := l.Command("SEND_ONCE " + command)
 	if reply.Success == 0 {
 		return errors.New(strings.Join(reply.Data, " "))
@@ -187,7 +193,8 @@ func (l *LircRouter) Send(command string) error {
 	return nil
 }
 
-func (l *LircRouter) SendLong(command string, delay time.Duration) error {
+// SendLong sends a SEND_START command followed by a delay and SEND_STOP`
+func (l *Router) SendLong(command string, delay time.Duration) error {
 	reply := l.Command("SEND_START " + command)
 	if reply.Success == 0 {
 		return errors.New(strings.Join(reply.Data, " "))
@@ -201,6 +208,7 @@ func (l *LircRouter) SendLong(command string, delay time.Duration) error {
 	return nil
 }
 
-func (l *LircRouter) Close() {
+// Close the connection to lirc daemon
+func (l *Router) Close() {
 	l.connection.Close()
 }
