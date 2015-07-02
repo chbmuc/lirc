@@ -11,6 +11,7 @@ package main
 import (
   "github.com/chbmuc/lirc"
   "log"
+  "time"
 )
 
 func keyPower(event lirc.Event) {
@@ -42,6 +43,17 @@ func main() {
   // run the receive service
   go ir.Run()
 
-  // make sure here's some blocking code
+  // Send Commands
+  reply := ir.Command(`LIST DenonTuner ""`)
+  log.Println(reply.DataLength, reply.Data)
+
+  err = ir.Send("DenonTuner PROG-SCAN")
+  if err != nil {
+    log.Println(err)
+  }
+  err = ir.SendLong("DenonTuner VOL-DOWN", time.Duration(time.Second * 3))
+  if err != nil {
+    log.Println(err)
+  }
 }
 ```
